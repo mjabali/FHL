@@ -11,7 +11,7 @@ For more help see the Apache Camel documentation
     http://camel.apache.org/
     
     
-Federal Home Loans Use Cases:
+FHL Use Cases:
     
 #1 - Timer component, Web Service call and then JMS Topic/Queue
 #2 - Pickup .CSV file from the file system, split CSV into multiples lines and then JMS topic/queue
