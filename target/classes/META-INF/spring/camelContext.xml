@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><beans xmlns="http://www.springframework.org/schema/beans" xmlns:cxf="http://camel.apache.org/schema/cxf" xmlns:jaxws="http://cxf.apache.org/jaxws" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd        http://camel.apache.org/schema/cxf http://camel.apache.org/schema/cxf/camel-cxf.xsd       http://cxf.apache.org/jaxws http://cxf.apache.org/schemas/jaxws.xsd">
+    
+  <camelContext xmlns="http://camel.apache.org/schema/spring" trace="false">
+    <route autoStartup="false" id="Timer_WebService_JMS" trace="false">
+        <from uri="timer:myTimer?fixedRate=true&amp;period=30000"/>
+        <setBody>
+            <language language="constant">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope"&gt;
+  &lt;soap12:Body&gt;
+    &lt;GetQuote xmlns="http://www.webserviceX.NET/"&gt;
+      &lt;symbol&gt;AAPL&lt;/symbol&gt;
+    &lt;/GetQuote&gt;
+  &lt;/soap12:Body&gt;
+&lt;/soap12:Envelope&gt;</language>
+        </setBody>
+        <log loggingLevel="INFO" message="&gt;&gt;&gt; Request Body: ${body}"/>
+        <to uri="cxf://http://www.webservicex.net/stockquote.asmx?wsdlURL=src/main/resources/META-INF/stockquote.wsdl&amp;serviceName={http://www.webserviceX.NET/}StockQuote&amp;portName={http://www.webserviceX.NET/}StockQuoteSoap&amp;dataFormat=MESSAGE"/>
+        <log loggingLevel="INFO" message="&gt;&gt;&gt; Response Body: ${body}"/>
+        <to uri="activemq:queue:stockPrice"/>
+    </route>
+    <route autoStartup="true" id="Pickup_Split_JMS">
+        <from uri="file:src/data/csv?noop=true"/>
+        <split parallelProcessing="false" stopOnException="false" timeout="0">
+            <language language="tokenize">\n</language>
+            <to uri="activemq:queue:split"/>
+        </split>
+    </route>
+</camelContext>
+                     
+<bean class="org.apache.activemq.camel.component.ActiveMQComponent" id="activemq">
+    <property name="brokerURL">
+      <value>tcp://localhost:61616</value>
+    </property>
+  </bean>
+</beans>
